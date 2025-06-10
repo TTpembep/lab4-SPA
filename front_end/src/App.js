@@ -2,7 +2,7 @@ import React, { useState, useEffect, createContext, useContext } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, Link } from "react-router-dom";
 
-// --- Auth Context ---
+//Авторизация
 const AuthContext = createContext();
 
 function AuthProvider({ children }) {
