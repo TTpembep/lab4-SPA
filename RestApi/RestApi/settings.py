@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%vh!&=v$z39v#$btpnna0os5evn9p$%koctqa5$lq8!f0nzuc-'
+SECRET_KEY = 'django-insecure-63n6i4ni$u!v&dk&_z+vosreuf&=#*rf*w-ne5jdlnk=-w)lcb'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -37,37 +37,34 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',   #Добавил приложения
-    'api',
+    'rest_framework',
     'corsheaders',
+    'api',
 ]
-REST_FRAMEWORK = {  #Настройки фрейморка для JWT-токена
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-    'EXCEPTION_HANDLER': 'api.exception_handlers.custom_exception_handler',
-}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "corsheaders.middleware.CorsMiddleware",    #Добавили что-то
 ]
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
-# Для авторизации с куками:
 CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False  # Это позволит JavaScript получить доступ к куки
+CSRF_USE_SESSIONS = False
+
 
 ROOT_URLCONF = 'RestApi.urls'
+
 
 TEMPLATES = [
     {
@@ -90,7 +87,7 @@ WSGI_APPLICATION = 'RestApi.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {   #Указал настройки своей базы данных
+DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'lab4',
@@ -99,6 +96,25 @@ DATABASES = {   #Указал настройки своей базы данны�
         'HOST': 'localhost',
         'PORT': '5432',
     }
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
 }
 
 
