@@ -13,17 +13,21 @@ const Login = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await login(formData);
-      console.log('Login successful', response.data);
-      localStorage.setItem('token', response.data.token);
-      navigate('/routes');
-    } catch (error) {
-      console.error('Login error:', error);
-    }
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await login(formData);
+    console.log('Login successful', response.data);
+    
+    // Сохраняем оба токена
+    localStorage.setItem('access_token', response.data.token);    // Access token
+    localStorage.setItem('refresh_token', response.data.refresh); // Refresh token
+    
+    navigate('/menu');
+  } catch (error) {
+    console.error('Login error:', error);
+  }
+};
 
   return (
     <form onSubmit={handleSubmit}>

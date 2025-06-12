@@ -1,7 +1,9 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.hashers import make_password, check_password
 from .models import Role, User, Route
 from .serializers import RoleSerializer, UserSerializer, RouteSerializer
@@ -14,7 +16,11 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+
+
 class RouteViewSet(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = Route.objects.all()
     serializer_class = RouteSerializer
 
@@ -52,10 +58,19 @@ def login(request):
     data = request.data
     login = data.get('login')
     password = data.get('password')
+    
     try:
         user = User.objects.get(login=login)
     except User.DoesNotExist:
         return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+    
     if not check_password(password, user.password_hash):
         return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
-    return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+    
+    # Генерация JWT-токенов
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        "message": "Login successful",
+        "token": str(refresh.access_token),  # Основной токен для авторизации
+        "refresh": str(refresh)  # Токен для обновления
+    }, status=status.HTTP_200_OK)
