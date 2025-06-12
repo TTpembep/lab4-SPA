@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { register } from '../services/api';
+import { handleApiError, register, getRoles } from '../services/api';
+import { useToast } from '../context/ToastContext';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -12,18 +13,25 @@ const Register = () => {
   });
 
   const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
   useEffect(() => {
-    // Здесь вы можете загрузить список ролей из API
-    // Например:
-    // const fetchRoles = async () => {
-    //   const response = await getRoles();
-    //   setRoles(response.data);
-    // };
-    // fetchRoles();
-    // Для примера, просто установим несколько ролей
-    setRoles([{ id: 1, type: 'Guest' }, { id: 2, type: 'Dispatcher' }]);
+    const fetchRoles = async () => {
+      try {
+        const response = await getRoles();
+        setRoles(response.data);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to load roles');
+        setLoading(false);
+        console.error('Error fetching roles:', err);
+      }
+    };
+
+    fetchRoles(); 
   }, []);
 
   const handleChange = (e) => {
@@ -31,30 +39,65 @@ const Register = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await register(formData);
-      console.log('Registration successful', response.data);
-      navigate('/login');
-    } catch (error) {
-      console.error('Registration error:', error);
+  e.preventDefault();
+  setLoading(true);
+  
+  try {
+    console.log('Отправка данных:', formData);
+    const response = await register(formData);
+    console.log('Ответ сервера:', response.data);
+    
+    addToast('Регистрация прошла успешно! Теперь вы можете войти.', 'success');
+    navigate('/login');
+  } catch (error) {
+    console.error('Полная ошибка:', error);
+    console.error('Данные ошибки:', error.response?.data); // Логируем детали ошибки
+    
+    if (error.response?.status === 400) {
+      // Обработка специфических ошибок валидации
+      const errorData = error.response.data;
+      
+      if (errorData.login) {
+        addToast(`Ошибка логина: ${errorData.login.join(', ')}`, 'error');
+      } else if (errorData.password) {
+        addToast(`Ошибка пароля: ${errorData.password.join(', ')}`, 'error');
+      } else if (errorData.non_field_errors) {
+        addToast(errorData.non_field_errors.join(', '), 'error');
+      } else {
+        // Общая обработка для других 400 ошибок
+        addToast('Проверьте введённые данные: ' + 
+          JSON.stringify(errorData, null, 2), 'error');
+      }
+    } else {
+      handleApiError(error, addToast);
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
+
+  if (loading) {
+    return <div>Loading roles...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
 
   return (
     <form onSubmit={handleSubmit}>
-      <input type="text" name="login" placeholder="Login" onChange={handleChange} required />
-      <input type="password" name="password" placeholder="Password" onChange={handleChange} required />
-      <input type="text" name="first_name" placeholder="First Name" onChange={handleChange} required />
-      <input type="text" name="last_name" placeholder="Last Name" onChange={handleChange} required />
+      <input type="text" name="login" placeholder="Логин" onChange={handleChange} required />
+      <input type="password" name="password" placeholder="Пароль" onChange={handleChange} required />
+      <input type="text" name="first_name" placeholder="Имя" onChange={handleChange} required />
+      <input type="text" name="last_name" placeholder="Фамилия" onChange={handleChange} required />
       <select name="role_id" onChange={handleChange} required>
-        <option value="">Select Role</option>
+        <option value="">Выбор роли</option>
         {roles.map((role) => (
           <option key={role.id} value={role.id}>{role.type}</option>
         ))}
       </select>
-      <button type="submit">Register</button>
-      <Link to="/login">Login</Link>
+      <button type="submit">Зарегистрироваться</button>
+      <div><Link to="/login">Вернуться ко входу</Link></div>
     </form>
   );
 };

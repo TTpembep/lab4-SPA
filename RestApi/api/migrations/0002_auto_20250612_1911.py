@@ -13,5 +13,8 @@ class Migration(migrations.Migration):
     ]
     
     operations = [
-        migrations.RunPython(forwards_func),
+        migrations.RunPython(
+        forwards_func,
+        reverse_code=lambda apps, schema_editor: None,
+    ),
     ]

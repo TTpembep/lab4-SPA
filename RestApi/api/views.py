@@ -13,6 +13,8 @@ class RoleViewSet(viewsets.ModelViewSet):
     serializer_class = RoleSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -31,24 +33,22 @@ def register(request):
     password = data.get('password')
     first_name = data.get('first_name')
     last_name = data.get('last_name')
-    role_id = data.get('role_id')  # Получаем role_id из данных запроса
+    role_id = data.get('role_id')
 
     if User.objects.filter(login=login).exists():
         return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Проверяем, существует ли роль с данным role_id
-    try:
+    try:    #Проверка, существования роли
         role = Role.objects.get(id=role_id)
     except Role.DoesNotExist:
         return Response({"error": "Role does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Создаем нового пользователя с указанной ролью
-    user = User.objects.create(
+    user = User.objects.create( #Создание нового пользователя
         login=login,
         password_hash=make_password(password),
         first_name=first_name,
         last_name=last_name,
-        role=role  # Устанавливаем роль пользователя
+        role=role
     )
 
     return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
@@ -67,10 +67,10 @@ def login(request):
     if not check_password(password, user.password_hash):
         return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
     
-    # Генерация JWT-токенов
-    refresh = RefreshToken.for_user(user)
+    
+    refresh = RefreshToken.for_user(user)   #Генерация JWT-токенов
     return Response({
         "message": "Login successful",
-        "token": str(refresh.access_token),  # Основной токен для авторизации
-        "refresh": str(refresh)  # Токен для обновления
+        "token": str(refresh.access_token),  #Основной токен для авторизации
+        "refresh": str(refresh)  #Токен для обновления
     }, status=status.HTTP_200_OK)
