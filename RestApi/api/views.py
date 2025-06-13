@@ -11,14 +11,13 @@ from .serializers import RoleSerializer, UserSerializer, RouteSerializer
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
+    http_method_names = ['get']
 
 class UserViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     queryset = User.objects.all()
     serializer_class = UserSerializer
-
-
 
 class RouteViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
