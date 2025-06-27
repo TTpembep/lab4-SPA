@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { login, handleApiError } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import axios from 'axios';
+
+const axiosInstance = axios.create({
+  baseURL: 'http://127.0.0.1:8000/api/',
+});
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -24,9 +29,34 @@ const Login = () => {
     
     localStorage.setItem('access_token', response.data.token);
     localStorage.setItem('refresh_token', response.data.refresh);
+
+    // 3. Получаем информацию о текущем пользователе
+    const userInfoResponse = await axiosInstance.get('users/', {
+      headers: {
+        'Authorization': `Bearer ${response.data.token}`
+      }
+    });
     
+    // 4. Находим текущего пользователя по логину
+    const currentUser = userInfoResponse.data.find(user => user.login === formData.login);
+    
+    if (!currentUser) {
+      throw new Error('Пользователь не найден');
+    }
+    
+    // 5. Определяем роль пользователя (предполагаем, что роль хранится в поле 'role')
+    const userRole = currentUser.role; 
     addToast('Вы успешно авторизовались!', 'success');
-    navigate('/menu');
+        // Перенаправляем в зависимости от роли
+    if (userRole === 1) {
+      navigate('/menu');
+    } else if (userRole === 2) {
+      navigate('/drivermenu');
+    } else {
+      // Если роль неизвестна, перенаправляем на страницу по умолчанию
+      navigate('/menu');
+      addToast('Неизвестная роль пользователя', 'warning');
+    }
     
   } catch (error) {
     if (error.response?.status === 400) {
@@ -48,7 +78,7 @@ const Login = () => {
   return (
     <div className="auth-container">
       <form onSubmit={handleSubmit}>
-        <h2>Вход в систему</h2>
+        <h2>Система безопасности в такси</h2>
 
         <input type="text" name="login" placeholder="Логин" onChange={handleChange} required />
         <input type="password" name="password" placeholder="Пароль" onChange={handleChange} required />

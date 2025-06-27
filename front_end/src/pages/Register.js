@@ -25,13 +25,13 @@ const Register = () => {
         setRoles(response.data);
         setLoading(false);
       } catch (err) {
-        setError('Failed to load roles');
+        setError('Не удалось загрузить роли');
         setLoading(false);
-        console.error('Error fetching roles:', err);
+        console.error('Ошибка при загрузке ролей:', err);
       }
     };
 
-    fetchRoles(); 
+    fetchRoles();
   }, []);
 
   const handleChange = (e) => {
@@ -39,66 +39,62 @@ const Register = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  
-  try {
-    console.log('Отправка данных:', formData);
-    const response = await register(formData);
-    console.log('Ответ сервера:', response.data);
-    
-    addToast('Регистрация прошла успешно! Теперь вы можете войти.', 'success');
-    navigate('/login');
-  } catch (error) {
-    console.error('Полная ошибка:', error);
-    console.error('Данные ошибки:', error.response?.data); // Логируем детали ошибки
-    
-    if (error.response?.status === 400) {
-      // Обработка специфических ошибок валидации
-      const errorData = error.response.data;
-      
-      if (errorData.login) {
-        addToast(`Ошибка логина: ${errorData.login.join(', ')}`, 'error');
-      } else if (errorData.password) {
-        addToast(`Ошибка пароля: ${errorData.password.join(', ')}`, 'error');
-      } else if (errorData.non_field_errors) {
-        addToast(errorData.non_field_errors.join(', '), 'error');
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await register(formData);
+      addToast('Регистрация прошла успешно! Теперь вы можете войти.', 'success');
+      navigate('/login');
+    } catch (error) {
+      const errorData = error.response?.data;
+      if (error.response?.status === 400) {
+        if (errorData.login) {
+          addToast(`Ошибка логина: ${errorData.login.join(', ')}`, 'error');
+        } else if (errorData.password) {
+          addToast(`Ошибка пароля: ${errorData.password.join(', ')}`, 'error');
+        } else if (errorData.non_field_errors) {
+          addToast(errorData.non_field_errors.join(', '), 'error');
+        } else {
+          addToast('Проверьте введённые данные: ' + JSON.stringify(errorData, null, 2), 'error');
+        }
       } else {
-        // Общая обработка для других 400 ошибок
-        addToast('Проверьте введённые данные: ' + 
-          JSON.stringify(errorData, null, 2), 'error');
+        handleApiError(error, addToast);
       }
-    } else {
-      handleApiError(error, addToast);
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-  if (loading) {
-    return <div>Loading roles...</div>;
-  }
-
-  if (error) {
-    return <div>{error}</div>;
-  }
+  if (loading && roles.length === 0) return <div>Loading roles...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input type="text" name="login" placeholder="Логин" onChange={handleChange} required />
-      <input type="password" name="password" placeholder="Пароль" onChange={handleChange} required />
-      <input type="text" name="first_name" placeholder="Имя" onChange={handleChange} required />
-      <input type="text" name="last_name" placeholder="Фамилия" onChange={handleChange} required />
-      <select name="role_id" onChange={handleChange} required>
-        <option value="">Выбор роли</option>
-        {roles.map((role) => (
-          <option key={role.id} value={role.id}>{role.type}</option>
-        ))}
-      </select>
-      <button type="submit">Зарегистрироваться</button>
-      <div><Link to="/login">Вернуться ко входу</Link></div>
-    </form>
+    <div className="auth-container">
+      <form onSubmit={handleSubmit}>
+        <h2>Регистрация в системе</h2>
+
+        <input type="text" name="login" placeholder="Логин" onChange={handleChange} required />
+        <input type="password" name="password" placeholder="Пароль" onChange={handleChange} required />
+        <input type="text" name="first_name" placeholder="Имя" onChange={handleChange} required />
+        <input type="text" name="last_name" placeholder="Фамилия" onChange={handleChange} required />
+
+        <select name="role_id" onChange={handleChange} required>
+          <option value="">Выбор роли</option>
+          {roles.map((role) => (
+            <option key={role.id} value={role.id}>{role.type}</option>
+          ))}
+        </select>
+        <br /> <br />
+
+        <button type="submit" disabled={loading}>
+          {loading ? 'Регистрация...' : 'Зарегистрироваться'}
+        </button>
+
+        <div className="auth-links">
+          <Link to="/login">Вернуться ко входу</Link>
+        </div>
+      </form>
+    </div>
   );
 };
 

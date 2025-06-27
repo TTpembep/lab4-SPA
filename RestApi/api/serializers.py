@@ -12,12 +12,13 @@ class UserSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class RouteSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    
     class Meta:
         model = Route
         fields = '__all__'
-        read_only_fields = ('user',)  #user только для чтения
+        read_only_fields = ('user',)
 
     def create(self, validated_data):
-        #Автоматически устанавливаем текущего пользователя
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)

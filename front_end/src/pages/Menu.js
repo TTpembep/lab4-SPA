@@ -1,173 +1,132 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getRoutes, createRoute, updateRoute, deleteRoute } from '../services/api';
+import { getRoutes, updateRoutes } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import './styles.css';
 
-const RoutesTable = () => {
+const areRoutesEqual = (a, b) => {
+  if (a.length !== b.length) return false;
+  return a.every((route, index) => 
+    route.id === b[index].id &&
+    route.description === b[index].description &&
+    route.planned_path === b[index].planned_path &&
+    route.current_path === b[index].current_path &&
+    route.status === b[index].status
+  );
+};
+
+const Menu = () => {
   const [routes, setRoutes] = useState([]);
-  const [editingRoute, setEditingRoute] = useState(null);
-  const [newRoute, setNewRoute] = useState({
-    description: '',
-    planned_path: '',
-    current_path: '',
-    status: ''
-  });
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const routesRef = useRef([]);
+  const updateInterval = useRef(null);
 
-  useEffect(() => {
-    fetchRoutes();
-  }, []);
+  const navigate = useNavigate();
   const { addToast } = useToast();
 
+  const fetchRoutes = async () => {
+    setLoading(true);
+    try {
+      const response = await getRoutes();
+      const newRoutes = response.data;
+      
+      if (!areRoutesEqual(newRoutes, routesRef.current)) {
+        routesRef.current = newRoutes;
+        setRoutes(newRoutes);
+      }
+    } catch (error) {
+      console.error('Error fetching routes:', error);
+      handleApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateRoutes = async () => {
+    try {
+      const response = await updateRoutes();
+      routesRef.current = response.data;
+      setRoutes(response.data);
+      addToast('Маршруты успешно обновлены', 'success');
+    } catch (error) {
+      console.error('Error updating routes:', error);
+      handleApiError(error);
+    }
+  };
+
   const handleLogout = () => {
+    clearInterval(updateInterval.current);
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     navigate('/login');
     addToast('Вы успешно вышли из системы', 'success');
   };
 
-  const fetchRoutes = async () => {
-    try {
-      const response = await getRoutes();
-      setRoutes(response.data);
-    } catch (error) {
-      console.error('Error fetching routes:', error);
+  const handleApiError = (error) => {
+    if (error.response) {
+      if (error.response.status === 401) {
+        addToast('Сессия истекла. Пожалуйста, войдите снова', 'error');
+        handleLogout();
+      } else {
+        addToast(error.response.data?.error || 'Ошибка сервера', 'error');
+      }
+    } else {
+      addToast(error.message || 'Неизвестная ошибка', 'error');
     }
   };
 
-  const handleCreate = async () => {
-    try {
-      await createRoute(newRoute);
-      setNewRoute({
-        description: '',
-        planned_path: '',
-        current_path: '',
-        status: ''
-      });
-      fetchRoutes();
-    } catch (error) {
-      console.error('Error creating route:', error);
-    }
-  };
+  useEffect(() => {
+    fetchRoutes();
+    updateInterval.current = setInterval(fetchRoutes, 5000);
+    return () => clearInterval(updateInterval.current);
+  }, []);
 
-  const handleUpdate = async () => {
-    try {
-      await updateRoute(editingRoute.id, editingRoute);
-      setEditingRoute(null);
-      fetchRoutes();
-    } catch (error) {
-      console.error('Error updating route:', error);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      await deleteRoute(id);
-      fetchRoutes();
-    } catch (error) {
-      console.error('Error deleting route:', error);
-    }
-  };
+  const renderRouteRow = (route) => (
+    <tr key={route.id}>
+      <td>{route.description}</td>
+      <td>{route.planned_path}</td>
+      <td>{route.current_path}</td>
+      <td className={`status-${route.status}`}>{route.status}</td>
+      <td>placeholder</td>
+    </tr>
+  );
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Панель отслеживания маршрутов авто.</h1>
-        <button 
-          onClick={handleLogout}
-          style={{ padding: '8px 16px', background: '#f44336',
-          color: 'white', border: 'none', borderRadius: '4px',
-          cursor: 'pointer'}}> Выйти из системы
-        </button>
+    <div className="container">
+      <div className="header">
+        <h1>Панель диспетчера маршрутов</h1>
+        <div className="button-group">
+          <button className="btn update-btn" onClick={handleUpdateRoutes}>
+            Обновить маршруты
+          </button>
+          <button className="btn logout-btn" onClick={handleLogout}>
+            Выйти из системы
+          </button>
+        </div>
       </div>
       
-      {/* Форма для создания нового маршрута */}
-      <div>
-        <h3>Добавление маршрута</h3>
-        <input
-          type="text"
-          placeholder="Описание"
-          value={newRoute.description}
-          onChange={(e) => setNewRoute({...newRoute, description: e.target.value})}
-        />
-        <input
-          type="text"
-          placeholder="Запланированный путь"
-          value={newRoute.planned_path}
-          onChange={(e) => setNewRoute({...newRoute, planned_path: e.target.value})}
-        />
-        <input
-          type="text"
-          placeholder="Текущий путь"
-          value={newRoute.current_path}
-          onChange={(e) => setNewRoute({...newRoute, current_path: e.target.value})}
-        />
-        <input
-          type="text"
-          placeholder="Статус"
-          value={newRoute.status}
-          onChange={(e) => setNewRoute({...newRoute, status: e.target.value})}
-        />
-        <button onClick={handleCreate}>Добавить маршрут</button>
-      </div>
-      <br />
-      {/* Форма для редактирования маршрута */}
-      {editingRoute && (
-        <div>
-          <h2>Редактирование маршрута</h2>
-          <input
-            type="text"
-            value={editingRoute.description}
-            onChange={(e) => setEditingRoute({...editingRoute, description: e.target.value})}
-          />
-          <input
-            type="text"
-            value={editingRoute.planned_path}
-            onChange={(e) => setEditingRoute({...editingRoute, planned_path: e.target.value})}
-          />
-          <input
-            type="text"
-            value={editingRoute.current_path}
-            onChange={(e) => setEditingRoute({...editingRoute, current_path: e.target.value})}
-          />
-          <input
-            type="text"
-            value={editingRoute.status}
-            onChange={(e) => setEditingRoute({...editingRoute, status: e.target.value})}
-          />
-          <button onClick={handleUpdate}>Сохранить</button>
-          <button onClick={() => setEditingRoute(null)}>Отмена</button>
-        </div>
-      )}
-
-      {/* Таблица с маршрутами */}
-      <table>
-        <thead>
-          <tr>
-            <th>Описание</th>
-            <th>Запланированный путь</th>
-            <th>Текущий путь</th>
-            <th>Статус</th>
-            <th>Действия</th>
-          </tr>
-        </thead>
-        <tbody>
-          {routes.map((route) => (
-            <tr key={route.id}>
-              <td>{route.description}</td>
-              <td>{route.planned_path}</td>
-              <td>{route.current_path}</td>
-              <td>{route.status}</td>
-              <td>
-                <button onClick={() => setEditingRoute(route)}>Изменить</button>
-                <button onClick={() => handleDelete(route.id)}>Удалить</button>
-              </td>
+      {loading && routes.length === 0 ? (
+        <p>Загрузка маршрутов...</p>
+      ) : routes.length > 0 ? (
+        <table>
+          <thead>
+            <tr>
+              <th>Описание</th>
+              <th>Запланированный путь</th>
+              <th>Текущий путь</th>
+              <th>Статус</th>
+              <th>Действия</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {routes.map(renderRouteRow)}
+          </tbody>
+        </table>
+      ) : (
+        <p>Маршруты отсутствуют.</p>
+      )}
     </div>
   );
 };
 
-export default RoutesTable;
+export default Menu;

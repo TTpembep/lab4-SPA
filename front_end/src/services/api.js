@@ -135,4 +135,39 @@ const getRoutes = () => {
   });
 };
 
-export { getRoles, register, login, getRoutes, createRoute, updateRoute, deleteRoute, refreshToken };
+const updateRoutes = async () => {
+  try {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const response = await axiosInstance.post('update-routes/', {}, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response;
+  } catch (error) {
+    if (error.response && error.response.status === 401) {
+      // Попробуем обновить токен, если истек
+      try {
+        const newToken = await refreshToken();
+        const response = await axiosInstance.post('update-routes/', {}, {
+          headers: {
+            'Authorization': `Bearer ${newToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        return response;
+      } catch (refreshError) {
+        throw refreshError;
+      }
+    }
+    throw error;
+  }
+};
+
+export { getRoles, register, login, getRoutes, createRoute, updateRoute, deleteRoute, updateRoutes, refreshToken };
