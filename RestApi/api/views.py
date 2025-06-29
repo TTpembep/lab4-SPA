@@ -88,7 +88,8 @@ def update_routes(request):
             return Response({"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         
         # Получаем все маршруты текущего пользователя
-        routes = Route.objects.filter(user=request.user.id)  # Используем request.user.id
+        #routes = Route.objects.filter(user=request.user.id)  # Используем request.user.id
+        routes = Route.objects.filter()
         
         if not routes.exists():
             return Response({"message": "No routes found for this user"}, status=status.HTTP_200_OK)

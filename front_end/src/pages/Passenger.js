@@ -42,18 +42,6 @@ const Menu = () => {
     }
   };
 
-  const handleUpdateRoutes = async () => {
-    try {
-      const response = await updateRoutes();
-      routesRef.current = response.data;
-      setRoutes(response.data);
-      addToast('Маршруты успешно обновлены', 'success');
-    } catch (error) {
-      console.error('Error updating routes:', error);
-      handleApiError(error);
-    }
-  };
-
   const handleLogout = () => {
     clearInterval(updateInterval.current);
     localStorage.removeItem('access_token');
@@ -93,11 +81,8 @@ const Menu = () => {
   return (
     <div className="container">
       <div className="header">
-        <h1>Панель диспетчера маршрутов</h1>
+        <h1>Панель пассажира для отслеживания маршрутов</h1>
         <div className="button-group">
-          <button className="btn update-btn" onClick={handleUpdateRoutes}>
-            Обновить маршруты
-          </button>
           <button className="btn logout-btn" onClick={handleLogout}>
             Выйти из системы
           </button>

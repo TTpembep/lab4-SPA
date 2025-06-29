@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Menu from './pages/Menu';
 import DriverMenu from './pages/DriverMenu';
+import Passenger from './pages/Passenger';
 import ProtectedRoute from './pages/ProtectedRoute';
 import { ToastProvider } from './context/ToastContext';
 
@@ -22,6 +23,11 @@ const App = () => {
         <Route path="/drivermenu" element={
           <ProtectedRoute>
             <DriverMenu />
+          </ProtectedRoute>
+        } />
+        <Route path="/passenger" element={
+          <ProtectedRoute>
+            <Passenger />
           </ProtectedRoute>
         } />
         <Route path="/" element={<Login />} />

@@ -52,6 +52,8 @@ const Login = () => {
       navigate('/menu');
     } else if (userRole === 2) {
       navigate('/drivermenu');
+    } else if (userRole === 3){
+      navigate('/passenger')
     } else {
       // Если роль неизвестна, перенаправляем на страницу по умолчанию
       navigate('/menu');
